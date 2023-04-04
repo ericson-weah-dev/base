@@ -18,7 +18,9 @@
  * @classdesc Base class
  */
 
-const  {get, request} = require('https');
+// const  {get, request} = require('https');
+const  https = require('https');
+const  http = require('http');
 const {parse} = require('url')
 
 class Base extends require("stream").Transform {
@@ -115,7 +117,7 @@ class Base extends require("stream").Transform {
    *
    */
    apiGet(url, options = {}, fn = (result, data) => {}, data = []){
-      get(url, options, response => {
+      https.get(url, options, response => {
          response.on('data', chunk => {
             data.push(chunk);
          });
@@ -124,6 +126,36 @@ class Base extends require("stream").Transform {
          });
          response.on('end', () => {
             this.emit('apiGet', JSON.parse(Buffer.concat(data).toString()));
+            fn(JSON.parse(Buffer.concat(data).toString()), data);
+         });
+      })
+      return this;
+   }  
+
+    /**
+   * @name get
+   * @function
+   *
+   * @param {String} url the https request api endpoint url
+   * @param {Object} options the https request option object
+   * @param {Function} fn the callback function 
+   * @param {Array} data the resulting object of the https request call;
+   *
+   * @description makes an https get request to an api endpoint
+   *
+   * @return stringified json parsed buffered data
+   *
+   */
+    get(url, options = {}, fn = (result, data) => {}, data = []){
+      https.get(url, options, response => {
+         response.on('data', chunk => {
+            data.push(chunk);
+         });
+         response.on('error', error => {
+            this.emit('get-error', error);
+         });
+         response.on('end', () => {
+            this.emit('get', JSON.parse(Buffer.concat(data).toString()));
             fn(JSON.parse(Buffer.concat(data).toString()), data);
          });
       })
@@ -154,7 +186,7 @@ class Base extends require("stream").Transform {
    *
    */
    apiRequest(url, options, fn = (result, data) => {}, data = []){
-        request(url, options, response => {
+        https.request(url, options, response => {
             response.on('data', chunk => {
                 data.push(chunk);
              });
@@ -194,7 +226,7 @@ class Base extends require("stream").Transform {
     options.method =  'POST';
     options.headers = headers;
 
-        const req =  request(options, response => {
+        const req =  https.request(options, response => {
         response.on('data', chunk => {
             datum += chunk;
         })
@@ -236,7 +268,7 @@ class Base extends require("stream").Transform {
      options.method =  'PUT';
      options.headers = headers;
  
-         const req =  request(options, response => {
+         const req =  https.request(options, response => {
          response.on('data', chunk => {
              datum += chunk;
          })
@@ -278,7 +310,7 @@ class Base extends require("stream").Transform {
      options.method =  'DELETE';
      options.headers = headers;
  
-         const req =  request(options, response => {
+         const req =  https.request(options, response => {
          response.on('data', chunk => {
              datum += chunk;
          })
@@ -294,6 +326,240 @@ class Base extends require("stream").Transform {
       req.write(datum);
       req.end();
     }
+
+
+    // http 
+
+
+      /**
+   * @name apiGET
+   * @function
+   *
+   * @param {String} url the https request api endpoint url
+   * @param {Object} options the https request option object
+   * @param {Function} fn the callback function 
+   * @param {Array} data the resulting object of the https request call;
+   *
+   * @description makes an https get request to an api endpoint
+   *
+   * @return stringified json parsed buffered data
+   *
+   */
+   apiGET(url, options = {}, fn = (result, data) => {}, data = []){
+    http.get(url, options, response => {
+       response.on('data', chunk => {
+          data.push(chunk);
+       });
+       response.on('error', error => {
+          this.emit('apiGET-error', error);
+       });
+       response.on('end', () => {
+          this.emit('apiGET', JSON.parse(Buffer.concat(data).toString()));
+          fn(JSON.parse(Buffer.concat(data).toString()), data);
+       });
+    })
+    return this;
+ }  
+
+  /**
+ * @name GET
+ * @function
+ *
+ * @param {String} url the https request api endpoint url
+ * @param {Object} options the https request option object
+ * @param {Function} fn the callback function 
+ * @param {Array} data the resulting object of the https request call;
+ *
+ * @description makes an https get request to an api endpoint
+ *
+ * @return stringified json parsed buffered data
+ *
+ */
+  GET(url, port = 80, fn = (result, data) => {}, data = []){
+
+    const options = parse(url);
+    options.port = 3000 || port;
+    options.method =  'GET';
+
+    http.get(url, options, response => {
+       response.on('data', chunk => {
+          data.push(chunk);
+       });
+       response.on('error', error => {
+          this.emit('GET-error', error);
+       });
+       response.on('end', () => {
+          this.emit('GET', JSON.parse(Buffer.concat(data).toString()));
+          fn(JSON.parse(Buffer.concat(data).toString()), data);
+       });
+    })
+    return this;
+ }  
+
+ options (url, method = 'POST', port  = 443, headers = {'Content-Type': 'application/json'
+}){
+  const options = parse(url);
+  options.port = port;
+  options.method = method;
+  options.headers = headers;
+  return options
+ }
+
+ /**
+ * @name apiRequest
+ * @function
+ *
+ * @param {String} url the https request api endpoint url
+ * @param {Object} options the https request option object
+ * @param {Function} fn the callback function 
+ * @param {Array} data the resulting object of the https request call;
+ *
+ * @description makes an https request to an api endpoint
+ *
+ * @return stringified json parsed buffered data
+ *
+ */
+ apiREQUEST(url, options, fn = (result, data) => {}, data = []){
+      http.request(url, options, response => {
+          response.on('data', chunk => {
+              data.push(chunk);
+           });
+           response.on('error', error => {
+              this.emit('apiREQUEST-error', error.message);
+              fn(error.message, error)
+           });
+           response.on('end', () => {
+              this.emit('apiREQUEST', JSON.parse(Buffer.concat(data).toString()));
+              fn(JSON.parse(Buffer.concat(data).toString()), data);
+           });
+      })
+ }
+
+
+  /**
+ * @name POST
+ * @function
+ *
+ * @param {String} url the https request api endpoint url
+ * @param {Array} data the resulting object of the https request call;
+ * @param {Object} headers the https request option object
+ * @param {Function} fn the callback function 
+ * @param {String} datum the resulting object of the https request call;
+
+ *
+ * @description makes an https post request to an api endpoint
+ *
+ * @return stringified json parsed buffered data
+ *
+ */
+ POST(url = parse(url), data = JSON.stringify(data), port = 80,  headers = {'Content-Type': 'application/json'
+ }, fn = (result, data) => {}, datum = ``){
+
+  const options = parse(url);
+  options.port = 3000 || port;
+  options.method =  'POST';
+  options.headers = headers;
+
+      const req =  http.request(options, response => {
+      response.on('data', chunk => {
+          datum += chunk;
+      })
+      response.on('end', () => {
+          this.emit('POST', JSON.parse(datum));
+          fn(JSON.parse(datum), datum);
+      })
+      response.on('error', error => {
+          this.emit('error', error.message);
+          fn(error.message, error);
+      })
+   })
+   req.write(datum);
+   req.end();
+ }
+
+
+  /**
+ * @name PUT
+ * @function
+ *
+ * @param {String} url the https request api endpoint url
+ * @param {Array} data the resulting object of the https request call;
+ * @param {Object} headers the https request option object
+ * @param {Function} fn the callback function 
+ * @param {String} datum the resulting object of the https request call;
+
+ *
+ * @description makes an https post request to an api endpoint
+ *
+ * @return stringified json parsed buffered data
+ *
+ */
+  PUT(url = parse(url), data = JSON.stringify(data), port = 80, headers = {'Content-Type': 'application/json'
+  }, fn = (result, data) => {}, datum = ``){
+
+   const options = parse(url);
+   options.port = 3000 || port;
+   options.method =  'PUT';
+   options.headers = headers;
+
+       const req =  http.request(options, response => {
+       response.on('data', chunk => {
+           datum += chunk;
+       })
+       response.on('end', () => {
+           this.emit('PUT', JSON.parse(datum));
+           fn(JSON.parse(datum), datum);
+       })
+       response.on('error', error => {
+           this.emit('error', error.message);
+           fn(error.message, error);
+       })
+    })
+    req.write(datum);
+    req.end();
+  }
+
+
+    /**
+ * @name DELETE
+ * @function
+ *
+ * @param {String} url the https request api endpoint url
+ * @param {Array} data the resulting object of the https request call;
+ * @param {Object} headers the https request option object
+ * @param {Function} fn the callback function 
+ * @param {String} datum the resulting object of the https request call;
+
+ *
+ * @description makes an https post request to an api endpoint
+ *
+ * @return stringified json parsed buffered data
+ *
+ */
+  DELETE(url = parse(url), port = 80, headers = {'Content-Type': 'application/json'
+  }, fn = (result, data) => {}, datum = ``){
+
+   const options = parse(url);
+   options.port = 3000 || port;
+   options.method =  'DELETE';
+   options.headers = headers;
+
+       const req =  http.request(options, response => {
+       response.on('data', chunk => {
+           datum += chunk;
+       })
+       response.on('end', () => {
+           this.emit('DELETE', JSON.parse(datum));
+           fn(JSON.parse(datum), datum);
+       })
+       response.on('error', error => {
+           this.emit('error', error.message);
+           fn(error.message, error);
+       })
+    })
+    req.write(datum);
+    req.end();
+  }
 
 
    removeDuplicateListeners(event) {
